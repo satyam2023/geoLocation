@@ -1,118 +1,86 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useEffect} from 'react';
+import {PermissionsAndroid, Platform} from 'react-native';
+import Geocoder from 'react-native-geocoding';
+import BackgroundGeolocation from 'react-native-background-geolocation';
+import Routes from './src/routes';
+import {StringConstant} from './src/config/constants/StringConstant';
 
-import React from 'react';
-import type {PropsWithChildren} from 'react';
-import {
-  SafeAreaView,
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
-  View,
-} from 'react-native';
-
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
-
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
-
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
+Geocoder.init(StringConstant.GOOGLE_API_KEY, {language: 'en'});
 
 function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
+  useEffect(() => {
+    BackgroundGeolocation.onLocation(location => {
+      console.log('onLocation:', location);
+    });
 
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+    BackgroundGeolocation.onMotionChange(event => {
+      console.log('onMotionChange:', event);
+    });
+
+    BackgroundGeolocation.onActivityChange(event => {
+      console.log('onActivityChange:', event);
+    });
+
+    BackgroundGeolocation.watchPosition(location=>{
+      console.log('Location:', location);
+    })
+
+    BackgroundGeolocation.onProviderChange(event => {
+      console.log('onProviderChange:', event);
+    });
+    BackgroundGeolocation.ready({
+      desiredAccuracy: BackgroundGeolocation.DESIRED_ACCURACY_HIGH,
+      distanceFilter: 50,
+      enableHeadless: true,
+      stopOnTerminate: false,
+      startOnBoot: true,
+      debug: true,
+    })
+      .then(state => {
+        if (!state.enabled) {
+          BackgroundGeolocation.start();
+        }
+      })
+      .catch(error => {
+        console.warn('- BackgroundGeolocation error: ', error);
+      });
+  }, []);
+
+  const checkback = async () => {
+    BackgroundGeolocation.getLocations(point => {
+      console.log('points in background', point);
+    });
   };
 
-  return (
-    <SafeAreaView style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
-      />
-      <ScrollView
-        contentInsetAdjustmentBehavior="automatic"
-        style={backgroundStyle}>
-        <Header />
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
+  useEffect(() => {
+    async function checkPermissions() {
+      if (Platform.OS === 'android') {
+        try {
+          const granted = await PermissionsAndroid.request(
+            PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+            {
+              title: StringConstant.LOC_PERM,
+              message: StringConstant.NEED_LOCATION_ACCESS,
+              buttonNeutral: StringConstant.ASK_LATER,
+              buttonNegative: StringConstant.CNL,
+              buttonPositive: StringConstant.OK,
+            },
+          );
+          if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+            console.log('Location permission granted');
+          } else {
+            console.log('Location permission denied');
+          }
+        } catch (err) {
+          console.warn(err);
+        }
+      }
+    }
+    checkPermissions();
+    setTimeout(() => checkback(), 20000);
+  }, []);
 
-const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
-  },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
-});
+  return <Routes />;
+}
 
 export default App;
