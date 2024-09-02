@@ -41,7 +41,7 @@
  <!-- <meta-data android:name="com.transistorsoft.locationmanager.license" android:value="YOUR_LICENCE_KEY_HERE" /> -->
        <meta-data
         android:name="com.google.android.geo.API_KEY"
-        android:value="AIzaSyCOjOFQqL9iVDqDPiScY7KFHwEOFs8ubcc"/>
+        android:value="API_KEY"/>
         <service android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask" />
       <activity
         android:name=".MainActivity"
